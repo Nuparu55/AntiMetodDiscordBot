@@ -41,5 +41,21 @@ namespace AntiMetodDiscordBot.API
                 return json;
             }
         }
+
+        public static Affixes SendRequestForAffixes()
+        {
+            Uri uri = new Uri($"https://raider.io/api/v1/mythic-plus/affixes?region=eu&locale=ru");
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+            httpWebRequest.Method = "GET";
+
+            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+
+            using (var sr = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                var response = sr.ReadToEnd();
+                var json = JsonConvert.DeserializeObject<Affixes>(response);
+                return json;
+            }
+        }
     }
 }

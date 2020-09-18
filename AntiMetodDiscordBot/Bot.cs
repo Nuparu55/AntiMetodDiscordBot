@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Configuration;
 using AntiMetodDiscordBot;
 using AntiMetodDiscordBot.API;
+using AntiMetodDiscordBot.Helpers;
+using static AntiMetodDiscordBot.Helpers.RaidGuides;
 
 namespace AntiMetodDiscordBot
 {
@@ -36,49 +38,79 @@ namespace AntiMetodDiscordBot
 
             client.MessageCreated += async e =>
             {
-                string message = e.Message.Content;
-                if (message.StartsWith("Персонаж:"))
+                if (e.Channel.Name.ToLower() == "анти-бот")
                 {
-                    var messageToSend = message.Replace(" ", "").Replace("Персонаж:", "").Split(',');
-                    try
-                    {
-                        var character = RaiderIOAPI.SendRequestForCharacter("eu", messageToSend[0], messageToSend[1]);
+                    string message = e.Message.Content;
 
-                        if (character.gear.item_level_equipped < 430)
-                            await e.Message.RespondAsync("Фу бля, ты даже не 430 илвл, ты ебанулся мне запросы отправлять???");
-                        else if (character.mythic_plus_scores.all < 100)
-                            await e.Message.RespondAsync("Пизда, нету даже сотки RIO, твое место у параши.");
-                        else
+                    if (message.ToLower().StartsWith("инфобот"))
+                    {
+                        var messageToSend =
+                        $"Приветствую тебя, участник наипиздатейшей гильдии АнтиМетод (если ты не участник, то ливай и заодно обоссы себе ебальник, чорт, хули ты тут забыл).{Environment.NewLine}" +
+                        $"Вот комманды, по которым я могу выдать тебе полезную информацию (или послать нахуй, тут по настроению):{Environment.NewLine}" +
+                        $"Персонаж: *Сервер*, *Ник персонажа* - Выдам инфу по любому существующему персонажу.{Environment.NewLine}" +
+                        $"Гильдия: *Сервер*, *Название гильдии* - Аналогично персонажу выдам полезную информацию по запрашиваемой гильдии.{Environment.NewLine}" +
+                        $"Аффиксы - Аффиксы текущей недели и их подробное описание на EU регионе.{Environment.NewLine}" +
+                        $"Гайд: *Сложность одной буквой (N - нормал, H - героик, M - мифик)* - Постараюсь найти для тебя видеогайд по прохождению интересующего тебя рейдового босса.";
+
+                        await e.Message.RespondAsync(messageToSend);
+                    }
+                    else if (message.ToLower().StartsWith("персонаж:"))
+                    {
+                        try
                         {
-                            await e.Message.RespondAsync(
-                                $"Имя: {character.name}{Environment.NewLine}" +
-                                $"Класс: {character.playedClass}{Environment.NewLine}" +
-                                $"Илвл: {character.gear.item_level_equipped}{Environment.NewLine}" +
-                                $"Raider.IO: {character.mythic_plus_scores.all}{Environment.NewLine}" +
-                                $"Прогресс Ниалоты: {character.raid_progression.nyalotha.summary}{Environment.NewLine}" +
-                                $"Ссылка на Raider.IO: {character.profile_url}"
-                                );
+                            await e.Message.RespondAsync(MessageBuilder.CharacterAnswer(message));
+                        }
+                        catch (WebException ex)
+                        {
+                            await e.Message.RespondAsync($"Произошла ошибка - (если тебе это что то даст, то {ex.Message}). {Environment.NewLine}Тут то ли ты вместо имени персонажа или сервера хуйню написал, то ли я дурак. {Environment.NewLine}Зовите Макса, пусть разбирается, хули.");
                         }
                     }
-                    catch (WebException ex)
+                    else if (message.ToLower().StartsWith("гильдия:"))
                     {
-                        await e.Message.RespondAsync($"Произошла ошибка - {ex.Message}");
+                        try
+                        {
+                            await e.Message.RespondAsync(MessageBuilder.GuildAnswer(message));
+                        }
+                        catch (WebException ex)
+                        {
+                            await e.Message.RespondAsync($"Произошла ошибка - (если тебе это что то даст, то {ex.Message}). {Environment.NewLine}Тут то ли ты вместо названия гильдии или сервера хуйню написал, то ли я дурак. {Environment.NewLine}Зовите Макса, пусть разбирается, хули.");
+                        }
                     }
-                }
-                else if (message.StartsWith("Гильдия:"))
-                {
-                    var messageToSend = message.Replace(" ", "").Replace("Гильдия:", "").Split(',');
-                    try
+                    else if (message.ToLower() == "аффиксы")
                     {
-                        var guild = RaiderIOAPI.SendRequestForGuild("eu", messageToSend[0], messageToSend[1]);
-                        await e.Message.RespondAsync(
-                            $"Гильдия: {guild.name}{Environment.NewLine}" +
-                            $"Прогресс Ниалоты: {guild.raid_progression.nyalotha.summary}{Environment.NewLine}" +
-                            $"Ссылка на Raider.IO: {guild.profile_url}");
+                        try
+                        {
+                            await e.Message.RespondAsync(MessageBuilder.AffixAnswer());
+                        }
+                        catch (WebException ex)
+                        {
+                            await e.Message.RespondAsync($"Произошла ошибка - (если тебе это что то даст, то {ex.Message}). {Environment.NewLine}Зовите Макса, пусть разбирается, хули.");
+                        }
                     }
-                    catch (WebException ex)
+                    else if (message.ToLower().StartsWith("гайд:"))
                     {
-                        await e.Message.RespondAsync($"Произошла ошибка - {ex.Message}");
+                        var parsedMessage = message.Replace(" ", "").Replace("гайд:", "").Replace("Гайд:", "").Split(',');
+                        if (parsedMessage.Length != 2)
+                            await e.Message.RespondAsync("Нормально напиши, блять, сложность и имя босса через запятую, полудурок");
+
+                        var dif = parsedMessage[0].ToLower();
+                        var bossName = parsedMessage[1].ToLower();
+
+                        switch (dif)
+                        {
+                            case "n":
+                                await e.Message.RespondAsync(RaidGuides.GetBossGuide(RaidDifficult.Normal, bossName));
+                                break;
+                            case "h":
+                                await e.Message.RespondAsync(RaidGuides.GetBossGuide(RaidDifficult.Heroic, bossName));
+                                break;
+                            case "m":
+                                await e.Message.RespondAsync(RaidGuides.GetBossGuide(RaidDifficult.Mythical, bossName));
+                                break;
+                            default:
+                                await e.Message.RespondAsync("Ты че, блять, сложность указать не можешь, дефеченто? Если не знаешь, как писать запросы, напиши \"Инфобот\", уебан, и узнай, как сука сложность указывать.");
+                                break;
+                        }
                     }
                 }
             };
