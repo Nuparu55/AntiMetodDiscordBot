@@ -7,9 +7,11 @@ namespace AntiMetodDiscordBot.Helpers
     {
         public static string CharacterAnswer(string message)
         {
-            var messageToSend = message.Replace(" ", "").Replace("персонаж:", "").Replace("Персонаж:", "").Split(',');
+            var realmFromMessage = message.Split(',')[0].Replace("персонаж:", "").Replace("Персонаж:", "").Trim().Replace(" ", "%20");
+            var nameFromMessage = message.Split(',')[1].Replace("персонаж:", "").Replace("Персонаж:", "").Trim();
 
-            var character = RaiderIOAPI.SendRequestForCharacter("eu", messageToSend[0], messageToSend[1]);
+
+            var character = RaiderIOAPI.SendRequestForCharacter("eu", realmFromMessage, nameFromMessage);
 
             if (character.gear.item_level_equipped < 430)
                 return "Фу бля, ты даже не 430 илвл, ты ебанулся мне запросы отправлять???";

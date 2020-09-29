@@ -59,10 +59,8 @@ namespace AntiMetodDiscordBot.Helpers
                     bossGuideUrl += "https://www.youtube.com/watch?v=W1zuTT1ua1A&list=PLJjqVD7EUL48AFlVNvcLInhX-o_B7x8Ug&index=7";
                     break;
 
-                case "ил'гинот, возроденная порча":
-                case "илгинот, возроденная порча":
-                case "ил'гинот возроденная порча":
-                case "илгинот возроденная порча":
+                case "ил'гинот возрожденная порча":
+                case "илгинот возрожденная порча":
                 case "ил'гинот":
                 case "илгинот":
                     bossGuideUrl += "https://www.youtube.com/watch?v=MM80XKMfsmY&list=PLJjqVD7EUL48AFlVNvcLInhX-o_B7x8Ug&index=8";

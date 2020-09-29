@@ -2,6 +2,10 @@
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Exceptions;
 using DSharpPlus.EventArgs;
+using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Net;
+using DSharpPlus.Net.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,9 +24,11 @@ namespace AntiMetodDiscordBot
     {
         public DiscordClient client { get; private set; }
         public string token;
+        private Random _rnd;
         public Bot()
         {
             token = ConfigurationManager.AppSettings["token"];
+            _rnd = new Random();
         }
         public async Task MainTask(string[] args)
         {
@@ -35,6 +41,12 @@ namespace AntiMetodDiscordBot
             };
 
             client = new DiscordClient(config);
+            client.Ready += async e =>
+            {
+                var game = new DiscordGame("твоем очке");
+                game.Application = client.CurrentApplication;
+                await client.UpdateStatusAsync(game);
+            };
 
             client.MessageCreated += async e =>
             {
@@ -51,7 +63,6 @@ namespace AntiMetodDiscordBot
                         $"Гильдия: *Сервер*, *Название гильдии* - Аналогично персонажу выдам полезную информацию по запрашиваемой гильдии.{Environment.NewLine}" +
                         $"Аффиксы - Аффиксы текущей недели и их подробное описание на EU регионе.{Environment.NewLine}" +
                         $"Гайд: *Сложность одной буквой (N - нормал, H - героик, M - мифик)* - Постараюсь найти для тебя видеогайд по прохождению интересующего тебя рейдового босса.";
-
                         await e.Message.RespondAsync(messageToSend);
                     }
                     else if (message.ToLower().StartsWith("персонаж:"))
@@ -89,12 +100,12 @@ namespace AntiMetodDiscordBot
                     }
                     else if (message.ToLower().StartsWith("гайд:"))
                     {
-                        var parsedMessage = message.Replace(" ", "").Replace("гайд:", "").Replace("Гайд:", "").Split(',');
+                        var parsedMessage = message.Replace("гайд:", "").Replace("Гайд:", "").Split(',');
                         if (parsedMessage.Length != 2)
                             await e.Message.RespondAsync("Нормально напиши, блять, сложность и имя босса через запятую, полудурок");
 
-                        var dif = parsedMessage[0].ToLower();
-                        var bossName = parsedMessage[1].ToLower();
+                        var dif = parsedMessage[0].ToLower().Trim();
+                        var bossName = parsedMessage[1].ToLower().Trim();
 
                         switch (dif)
                         {
@@ -110,6 +121,30 @@ namespace AntiMetodDiscordBot
                             default:
                                 await e.Message.RespondAsync("Ты че, блять, сложность указать не можешь, дефеченто? Если не знаешь, как писать запросы, напиши \"Инфобот\", уебан, и узнай, как сука сложность указывать.");
                                 break;
+                        }
+                    }
+                    else if (message.ToLower() == "рандомная тян")
+                    {
+                        string[] tyans = { 
+                            "http://img1.joyreactor.cc/pics/post/full/Anime-Nora-cat-nora-cat-channel-sunsuke-4291251.png",
+                            "https://i.pinimg.com/736x/1b/33/07/1b330700beab0801c6aa8a4392fd9461.jpg",
+                            "https://trikky.ru/wp-content/blogs.dir/1/files/2019/11/15/0674654f7d9b9ed91a3a6f92e08823bf.jpg" };
+
+                        var tyan = tyans[_rnd.Next(3)];
+
+                        var builder = new DiscordEmbedBuilder();
+                        builder.ImageUrl = tyan;
+                        await e.Message.RespondAsync(null, false, builder.Build());
+                    }
+                    else if (message.ToLower() == "вилкой чисти")
+                    {
+                        var last = e.Channel.LastMessageId;
+                        var messages = e.Channel.GetMessagesAsync(100, last).Result;
+                        while (messages.Any())
+                        {
+                            e.Channel.DeleteMessagesAsync(messages).Wait();
+                            last = e.Channel.LastMessageId;
+                            messages = e.Channel.GetMessagesAsync(100, last).Result;
                         }
                     }
                 }
